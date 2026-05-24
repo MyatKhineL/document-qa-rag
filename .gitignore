@@ -1,0 +1,13 @@
+# .gitignore
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# FAISS index
+faiss_index/
+
+# OS
+.DS_Store
