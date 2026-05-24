@@ -4,15 +4,8 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)
 ![LangChain](https://img.shields.io/badge/LangChain-0.1-orange)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 A production-ready RAG (Retrieval-Augmented Generation) system that allows users to upload PDF documents and ask questions in natural language. Answers are returned with source citations and page references in real time.
-
----
-
-## Demo
-
-![Demo](./assets/demo.gif)
 
 ---
 
