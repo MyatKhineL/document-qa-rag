@@ -7,4 +7,3 @@ faiss-cpu
 pypdf
 python-multipart
 python-dotenv
-psycopg2-binary
