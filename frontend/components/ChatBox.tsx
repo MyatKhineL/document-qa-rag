@@ -1,68 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocale } from "@/lib/LocaleContext";
 
-// Message shape — each message has a role and content
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
-// ChatBox component — lets the user ask questions about the uploaded document
 export default function ChatBox() {
-  // Store the full chat history (user + assistant messages)
+  const { t } = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
-
-  // Track the current input value
   const [input, setInput] = useState("");
-
-  // Track loading state while waiting for the backend response
   const [loading, setLoading] = useState(false);
 
-  // Called when the user submits a question
+  // Auto-scroll to bottom on new message
+  const bottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const question = input.trim();
     if (!question) return;
 
-    // Add the user's message to chat history immediately
-    const userMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Clear the input field
+    setMessages((prev) => [...prev, { role: "user", content: question }]);
     setInput("");
     setLoading(true);
 
     try {
-      // POST the question to FastAPI /ask endpoint
       const res = await fetch("http://localhost:8000/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
       });
-
       const data = await res.json();
 
-      if (res.ok) {
-        // Add the assistant's answer to chat history
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: data.answer,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        // FastAPI returned an error
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: `Error: ${data.detail || "Something went wrong."}` },
-        ]);
-      }
-    } catch {
-      // Network error — backend not running or unreachable
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Cannot connect to backend. Is the server running?" },
+        {
+          role: "assistant",
+          content: res.ok ? data.answer : (data.detail || t.errorNetwork),
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: t.errorNetwork },
       ]);
     } finally {
       setLoading(false);
@@ -70,65 +55,74 @@ export default function ChatBox() {
   };
 
   return (
-    <div className="w-full max-w-2xl flex flex-col border rounded-xl shadow-sm bg-white overflow-hidden">
-      <h2 className="text-lg font-semibold p-4 border-b">Ask a Question</h2>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden"
+      style={{ height: "480px" }}>
 
-      {/* Chat message list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-100">
+        <h2 className="text-base font-semibold text-slate-800">{t.chatTitle}</h2>
+        <p className="text-sm text-slate-400 mt-0.5">{t.chatSub}</p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {messages.length === 0 && (
-          // Placeholder when no messages yet
-          <p className="text-sm text-gray-400 text-center mt-8">
-            Upload a PDF and ask a question to get started.
-          </p>
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-400">{t.empty}</p>
+          </div>
         )}
 
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-none"      // User bubble — right, blue
-                  : "bg-gray-100 text-gray-800 rounded-bl-none"   // Assistant bubble — left, gray
-              }`}
-            >
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+              msg.role === "user"
+                ? "bg-[#1E40AF] text-white rounded-br-none"
+                : "bg-slate-100 text-slate-700 rounded-bl-none"
+            }`}>
               {msg.content}
             </div>
           </div>
         ))}
 
-        {/* Loading indicator while waiting for answer */}
+        {/* Loading dots */}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-400 px-4 py-2 rounded-2xl rounded-bl-none text-sm">
-              Thinking...
+            <div className="bg-slate-100 px-4 py-3 rounded-2xl rounded-bl-none flex gap-1 items-center">
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
             </div>
           </div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input form at the bottom */}
-      <form onSubmit={handleSubmit} className="flex gap-2 p-4 border-t">
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="px-6 py-4 border-t border-slate-100 flex gap-3">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a question about the document..."
+          placeholder={t.chatPlaceholder}
           disabled={loading}
-          className="flex-1 px-4 py-2 border rounded-lg text-sm
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:opacity-50"
+          className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm
+            focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-transparent
+            disabled:opacity-50 placeholder:text-slate-400"
         />
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium
-            hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-            transition-colors"
+          className="px-4 py-2.5 bg-[#1E40AF] text-white rounded-xl text-sm font-semibold
+            hover:bg-[#1e3a8a] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          Send
+          {t.send}
         </button>
       </form>
     </div>
