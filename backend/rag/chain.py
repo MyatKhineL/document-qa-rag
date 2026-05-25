@@ -14,14 +14,17 @@ load_dotenv()
 # {context} will be filled with retrieved chunks from FAISS
 # {question} will be filled with the user's question
 PROMPT_TEMPLATE = """
-You are a helpful assistant. Answer the question based only on the context below.
-If the answer is not in the context, say "I don't know based on the provided document."
+You are a helpful assistant. Use the context below to answer the question as helpfully as possible.
+The context may be partial — use what is available and make reasonable inferences.
+Only say "I don't know based on the provided document." if the context has absolutely no relevant information.
 
 Context:
 {context}
 
 Question:
 {question}
+
+Answer:
 """
 
 
@@ -51,7 +54,7 @@ def build_chain():
     """
 
     # Step 1: Load the retriever (searches FAISS index)
-    retriever = get_retriever(k=3)
+    retriever = get_retriever(k=5)
 
     # Step 2: Define the prompt template
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -82,18 +85,33 @@ def build_chain():
 def ask(question: str) -> str:
     """
     Run the full RAG pipeline for a given question.
-
-    Args:
-        question: The user's question string
-
-    Returns:
-        The LLM's answer as a plain string
+    Includes debug logging to verify retrieval and context quality.
     """
 
-    # Build the chain
-    chain = build_chain()
+    # Step 1: Check retriever directly before running chain
+    retriever = get_retriever(k=5)
+    docs = retriever.invoke(question)
 
-    # Run the chain — this triggers retrieval + LLM in one call
+    # Debug — print number of retrieved chunks
+    print(f"\n{'='*50}")
+    print(f"Question: {question}")
+    print(f"Retrieved {len(docs)} chunks from FAISS")
+
+    # Debug — print each chunk content so we can verify relevance
+    for i, doc in enumerate(docs):
+        print(f"\n--- Chunk {i+1} ---")
+        print(f"Content: {doc.page_content[:300]}")  # first 300 chars
+        print(f"Metadata: {doc.metadata}")
+
+    if not docs:
+        print("WARNING: No chunks retrieved — FAISS index may be empty or question too different")
+        return "I don't know based on the provided document."
+
+    # Step 2: Build and run the chain with debug context visible
+    chain = build_chain()
     answer = chain.invoke(question)
+
+    print(f"\nAnswer: {answer}")
+    print(f"{'='*50}\n")
 
     return answer
