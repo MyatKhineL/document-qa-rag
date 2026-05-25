@@ -9,6 +9,16 @@ A production-ready RAG (Retrieval-Augmented Generation) system that allows users
 
 ---
 
+## System Flow
+
+```mermaid
+graph LR
+    A[PDF Upload] --> B[Chunking] --> C[Embedding] --> D[(FAISS Store)]
+    E[User Question] --> F[Embed Query] --> G[Similarity Search]
+    G -->|top-k chunks| H[LLM Generate] --> I[Answer + Source]
+    G -.->|search| D
+```
+
 ## Features
 
 - PDF upload and automatic indexing
