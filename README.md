@@ -19,6 +19,10 @@ graph LR
     G -.->|search| D
 ```
 
+## Demo
+
+![Demo](./assets/demo.gif)
+
 ## Features
 
 - PDF upload and automatic indexing
