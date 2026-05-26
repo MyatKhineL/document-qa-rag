@@ -43,7 +43,6 @@ graph LR
 | RAG Pipeline | LangChain + FAISS |
 | LLM | OpenAI GPT-4o-mini |
 | Embeddings | OpenAI text-embedding-3-small |
-| Database | PostgreSQL |
 
 ---
 
@@ -105,7 +104,6 @@ Create a `.env` file in the `backend` directory:
 
 ```
 OPENAI_API_KEY=your_openai_api_key
-DATABASE_URL=postgresql://user:password@localhost:5432/ragdb
 ```
 
 ---
