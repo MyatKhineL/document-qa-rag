@@ -75,7 +75,6 @@ document-qa-rag/
 
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL
 - OpenAI API Key
 
 ### Backend Setup
@@ -120,4 +119,3 @@ DATABASE_URL=postgresql://user:password@localhost:5432/ragdb
 ---
 
 *Built with LangChain, FastAPI, and Next.js*
-
