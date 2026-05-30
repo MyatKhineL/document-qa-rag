@@ -19,6 +19,49 @@ graph LR
     G -.->|search| D
 ```
 
+## Architecture
+
+```mermaid
+graph TD
+    subgraph Frontend["Frontend (Next.js 14)"]
+        UI[page.tsx]
+        FU[FileUpload.tsx]
+        CB[ChatBox.tsx]
+        LC[LocaleContext\nEN / JP]
+        UI --> FU
+        UI --> CB
+        UI --> LC
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        API[main.py]
+        ING[ingestion.py\nPyPDFLoader → Chunker → Embedder]
+        RET[retriever.py\nFAISS Similarity Search]
+        CHN[chain.py\nPrompt → GPT-4o-mini]
+        API --> ING
+        API --> CHN
+        CHN --> RET
+    end
+
+    subgraph Storage["Local Storage"]
+        FAISS[(faiss_index/\nvector store)]
+    end
+
+    subgraph OpenAI["OpenAI API"]
+        EMB[text-embedding-3-small]
+        LLM[gpt-4o-mini]
+    end
+
+    FU -->|"POST /upload\n(PDF)"| API
+    CB -->|"POST /ask\n(question)"| API
+
+    ING -->|embed chunks| EMB
+    ING -->|save index| FAISS
+    RET -->|load + search| FAISS
+    RET -->|embed query| EMB
+    CHN -->|generate answer| LLM
+```
+
 ## Demo
 
 ![Demo](./assets/demo.gif)
