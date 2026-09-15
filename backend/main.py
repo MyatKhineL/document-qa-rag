@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import shutil
 import tempfile
+from typing import List
 
 from rag.ingestion import ingest_document
 from rag.chain import ask
@@ -35,9 +36,16 @@ class QuestionRequest(BaseModel):
     question: str
 
 
+# A single citation: which page the answer drew from, and the matching excerpt
+class Source(BaseModel):
+    page: int
+    snippet: str
+
+
 # Response body schema for /ask endpoint
 class AnswerResponse(BaseModel):
     answer: str
+    sources: List[Source]
 
 
 @app.get("/")
@@ -100,9 +108,9 @@ async def ask_question(body: QuestionRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        # Run the full RAG pipeline and get the answer
-        answer = ask(body.question)
+        # Run the full RAG pipeline and get the answer plus its source pages
+        answer, sources = ask(body.question)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get answer: {str(e)}")
 
-    return AnswerResponse(answer=answer)
+    return AnswerResponse(answer=answer, sources=sources)

@@ -18,6 +18,8 @@ export const translations = {
     success: (name: string) => `'${name}' uploaded and ingested successfully.`,
     errorPdf: "Please select a valid PDF file.",
     errorNetwork: "Cannot connect to backend. Is the server running?",
+    sourcesLabel: "Sources",
+    pageLabel: (page: number) => `Page ${page}`,
   },
   ja: {
     badge: "GPT-4o-mini · RAGテクノロジー搭載",
@@ -37,6 +39,8 @@ export const translations = {
     success: (name: string) => `'${name}' のアップロードと処理が完了しました。`,
     errorPdf: "有効なPDFファイルを選択してください。",
     errorNetwork: "バックエンドに接続できません。サーバーは起動していますか？",
+    sourcesLabel: "出典",
+    pageLabel: (page: number) => `${page}ページ`,
   },
 };
 

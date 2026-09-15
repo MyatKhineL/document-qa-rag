@@ -3,9 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocale } from "@/lib/LocaleContext";
 
+type Source = {
+  page: number;
+  snippet: string;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
+  sources?: Source[];
 };
 
 export default function ChatBox() {
@@ -42,6 +48,7 @@ export default function ChatBox() {
         {
           role: "assistant",
           content: res.ok ? data.answer : (data.detail || t.errorNetwork),
+          sources: res.ok ? data.sources : undefined,
         },
       ]);
     } catch {
@@ -79,7 +86,7 @@ export default function ChatBox() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
               msg.role === "user"
                 ? "bg-[#1E40AF] text-white rounded-br-none"
@@ -87,6 +94,25 @@ export default function ChatBox() {
             }`}>
               {msg.content}
             </div>
+
+            {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
+              <div className="max-w-[75%] mt-1.5 flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
+                  {t.sourcesLabel}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {msg.sources.map((source, j) => (
+                    <span
+                      key={j}
+                      title={source.snippet}
+                      className="px-2 py-0.5 bg-white border border-slate-200 rounded-full text-[11px] text-slate-500 cursor-help"
+                    >
+                      {t.pageLabel(source.page)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
 
