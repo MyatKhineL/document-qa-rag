@@ -121,6 +121,14 @@ export default function FileUpload() {
         </button>
       )}
 
+      {/* Indeterminate progress bar — real % is not available (embedding時間はサーバー側でしか分からない),
+          so a moving bar honestly signals "still working" instead of a fake percentage. */}
+      {status === "uploading" && (
+        <div className="mt-3 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full w-1/3 bg-[#1E40AF] rounded-full animate-upload-progress" />
+        </div>
+      )}
+
       {/* Cold-start hint — 8 seconds ကျော်ပြီးတော့လည်း uploading ဖြစ်နေရင် ပြ */}
       {status === "uploading" && showWakeHint && (
         <div className="mt-3 px-4 py-3 rounded-xl text-sm bg-blue-50 text-blue-600">

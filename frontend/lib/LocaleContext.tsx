@@ -10,16 +10,16 @@ type LocaleContextType = {
   toggle: () => void;
 };
 
-// Create context with EN as default
+// Create context with JA as default
 const LocaleContext = createContext<LocaleContextType>({
-  locale: "en",
-  t: translations.en,
+  locale: "ja",
+  t: translations.ja,
   toggle: () => {},
 });
 
 // Provider — wraps the app and shares locale state with all components
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>("ja");
 
   // Toggle between EN and JP
   const toggle = () => setLocale((l) => (l === "en" ? "ja" : "en"));
