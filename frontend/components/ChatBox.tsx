@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useLocale } from "@/lib/LocaleContext";
+import { API_URL } from "@/lib/config";
 
 type Source = {
   page: number;
@@ -36,7 +37,7 @@ export default function ChatBox() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/ask", {
+      const res = await fetch(`${API_URL}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),

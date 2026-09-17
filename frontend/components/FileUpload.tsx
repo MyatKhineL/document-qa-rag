@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale } from "@/lib/LocaleContext";
+import { API_URL } from "@/lib/config";
 
 export default function FileUpload() {
   const { t } = useLocale();
@@ -31,7 +32,7 @@ export default function FileUpload() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:8000/upload", {
+      const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
         body: formData,
       });

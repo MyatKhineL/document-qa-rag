@@ -20,11 +20,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow frontend (Next.js on port 3000) to call this API
-# Without this, browser will block requests from different ports (CORS error)
+# Allow the frontend to call this API. Defaults to local dev; set
+# FRONTEND_URL (e.g. the deployed Vercel/Render URL) in production.
+allowed_origins = ["http://localhost:3000"]
+if frontend_url := os.getenv("FRONTEND_URL"):
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
