@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocale } from "@/lib/LocaleContext";
 import { API_URL } from "@/lib/config";
+
+// Render's free tier puts an idle backend to sleep; the first request after
+// that can take 30-60s to wake it up. Anything past this is worth telling
+// the user about instead of leaving them staring at "Uploading...".
+const SLOW_WAKE_HINT_MS = 8000;
+const UPLOAD_TIMEOUT_MS = 90000;
 
 export default function FileUpload() {
   const { t } = useLocale();
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [showWakeHint, setShowWakeHint] = useState(false);
+  const wakeHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (wakeHintTimer.current) clearTimeout(wakeHintTimer.current);
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -27,14 +41,21 @@ export default function FileUpload() {
     if (!file) return;
     setStatus("uploading");
     setMessage("");
+    setShowWakeHint(false);
+
+    wakeHintTimer.current = setTimeout(() => setShowWakeHint(true), SLOW_WAKE_HINT_MS);
 
     const formData = new FormData();
     formData.append("file", file);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
 
     try {
       const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
       const data = await res.json();
 
@@ -45,9 +66,13 @@ export default function FileUpload() {
         setStatus("error");
         setMessage(data.detail || t.errorNetwork);
       }
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage(t.errorNetwork);
+      setMessage(err instanceof DOMException && err.name === "AbortError" ? t.errorTimeout : t.errorNetwork);
+    } finally {
+      clearTimeout(timeout);
+      if (wakeHintTimer.current) clearTimeout(wakeHintTimer.current);
+      setShowWakeHint(false);
     }
   };
 
@@ -92,8 +117,15 @@ export default function FileUpload() {
           className="mt-4 w-full py-2.5 bg-[#1E40AF] text-white text-sm font-semibold rounded-xl
             hover:bg-[#1e3a8a] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {status === "uploading" ? t.uploading : t.uploadBtn}
+          {status === "uploading" ? t.uploading : status === "error" ? t.retry : t.uploadBtn}
         </button>
+      )}
+
+      {/* Cold-start hint — 8 seconds ကျော်ပြီးတော့လည်း uploading ဖြစ်နေရင် ပြ */}
+      {status === "uploading" && showWakeHint && (
+        <div className="mt-3 px-4 py-3 rounded-xl text-sm bg-blue-50 text-blue-600">
+          {t.wakeHint}
+        </div>
       )}
 
       {/* Error message သာ ပြ — success box အစား drop zone ထဲမှာ ပြပြီ */}
