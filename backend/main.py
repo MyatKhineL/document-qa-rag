@@ -1,4 +1,5 @@
 import os
+import traceback
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,7 +8,7 @@ import shutil
 import tempfile
 from typing import List
 
-from rag.ingestion import ingest_document
+from rag.ingestion import ingest_document, FAISS_INDEX_PATH
 from rag.chain import ask
 
 # Load API key from .env file
@@ -85,8 +86,9 @@ async def upload_document(file: UploadFile = File(...)):
     try:
         # Run the ingestion pipeline on the temp file
         ingest_document(tmp_path)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+    except Exception:
+        print(f"ERROR in /upload: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to process the PDF. Please try again.")
     finally:
         # Always delete the temp file after processing
         os.remove(tmp_path)
@@ -111,10 +113,19 @@ async def ask_question(body: QuestionRequest):
     if not body.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
+    if not os.path.exists(FAISS_INDEX_PATH):
+        raise HTTPException(
+            status_code=400,
+            detail="No document has been uploaded yet. Please upload a PDF first.",
+        )
+
     try:
         # Run the full RAG pipeline and get the answer plus its source pages
         answer, sources = ask(body.question)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get answer: {str(e)}")
+    except Exception:
+        # Don't leak internal exception details (file paths, library
+        # stack frames) to the client — log them server-side instead.
+        print(f"ERROR in /ask: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to get an answer. Please try again.")
 
     return AnswerResponse(answer=answer, sources=sources)
