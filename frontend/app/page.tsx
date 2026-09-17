@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import FileUpload from "@/components/FileUpload";
 import ChatBox from "@/components/ChatBox";
 import { useLocale } from "@/lib/LocaleContext";
 
 export default function Home() {
   const { locale, t, toggle } = useLocale();
+  // Bumped whenever a document finishes uploading — remounts ChatBox so a
+  // previous document's Q&A history doesn't linger once a new one is in.
+  const [documentVersion, setDocumentVersion] = useState(0);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -55,10 +59,10 @@ export default function Home() {
         {/* Side by side cards */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="w-full lg:w-[360px] shrink-0">
-            <FileUpload />
+            <FileUpload onDocumentChanged={() => setDocumentVersion((v) => v + 1)} />
           </div>
           <div className="w-full flex-1">
-            <ChatBox />
+            <ChatBox key={documentVersion} />
           </div>
         </div>
 

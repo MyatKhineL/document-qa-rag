@@ -10,7 +10,11 @@ import { API_URL } from "@/lib/config";
 const SLOW_WAKE_HINT_MS = 8000;
 const UPLOAD_TIMEOUT_MS = 90000;
 
-export default function FileUpload() {
+type FileUploadProps = {
+  onDocumentChanged?: () => void;
+};
+
+export default function FileUpload({ onDocumentChanged }: FileUploadProps) {
   const { t } = useLocale();
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -23,6 +27,16 @@ export default function FileUpload() {
       if (wakeHintTimer.current) clearTimeout(wakeHintTimer.current);
     };
   }, []);
+
+  const handleUploadAnother = () => {
+    setFile(null);
+    setStatus("idle");
+    setMessage("");
+    // The next document has different content, so the previous document's
+    // Q&A thread in ChatBox needs to go too — otherwise it looks like it's
+    // still answering about a document that was just replaced.
+    onDocumentChanged?.();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -62,6 +76,7 @@ export default function FileUpload() {
       if (res.ok) {
         setStatus("success");
         setMessage(t.success(file.name));
+        onDocumentChanged?.();
       } else {
         setStatus("error");
         setMessage(data.detail || t.errorNetwork);
@@ -93,7 +108,7 @@ export default function FileUpload() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <span className="text-sm font-medium text-emerald-700">{file?.name}</span>
-          <span className="text-xs text-emerald-500 mt-0.5">Uploaded successfully</span>
+          <span className="text-xs text-emerald-500 mt-0.5">{t.uploadedBadge}</span>
         </div>
       ) : (
         <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed
@@ -109,8 +124,16 @@ export default function FileUpload() {
         </label>
       )}
 
-      {/* Upload button — success ဖြစ်ရင် မပြ */}
-      {status !== "success" && (
+      {/* Upload button — success ဖြစ်ရင် "Upload a different document" ပြောင်းပြ */}
+      {status === "success" ? (
+        <button
+          onClick={handleUploadAnother}
+          className="mt-4 w-full py-2.5 bg-white text-[#1E40AF] text-sm font-semibold rounded-xl
+            border border-[#1E40AF] hover:bg-blue-50 transition-colors"
+        >
+          {t.uploadAnother}
+        </button>
+      ) : (
         <button
           onClick={handleUpload}
           disabled={!file || status === "uploading"}
